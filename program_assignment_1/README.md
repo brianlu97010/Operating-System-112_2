@@ -1,10 +1,14 @@
 # OS program assignment 1
 
 ## To compile 
-using `clang ashell.c -o ashell.o`
+using `make` to run Makefile
 
 ## To execute
-using `./ashell.o`
+using `./ashell`
+
+## To clean the executable file
+using `make clean`
+
 
 ## Goal
 Implement **shell built-in commands** (such as `cd`, `history`, `exit`) and **program commands** (such as `ls`, `grep`, etc. in the /bin/ directory).
