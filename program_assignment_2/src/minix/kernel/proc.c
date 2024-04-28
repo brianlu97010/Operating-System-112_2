@@ -1520,6 +1520,55 @@ asyn_error:
   return(OK);
 }
 
+
+
+/*	Lottery Scheduling	*/
+
+int total_tickets = 0;		/* Total number of tickets of all the process in scheduling queue */
+/*	Style sets the process scheduling algorithm.
+ * 	0 = Standard Scheduling
+ * 	1 = Static Lottery Scheduling
+ * 	2 = Dynamic Lottery Scheduling
+ */
+int style = 1;
+
+/*===========================================================================*
+ *				ProcessSetPriority				* 
+ *===========================================================================*/
+void ProcessSetPriority(
+	register struct proc *rp,
+	int n;		/* Number of tickets */
+)
+{
+/* 
+ * Tickets are allocated to the process according to its priority. 
+ * The higher the priority, the more tickets are allocated.
+ * The number of tickets is determined by the number of tickets of the process with the highest priority.
+*/	
+	/*	Increase the number of tickets for the process	*/
+	if( n > 0 ){
+		/*	Make sure that the tickets of one process would be bounded in 20 */
+		if ( (n + rp->p_tickets) > 20 || rp->p_tickets == 20 ){
+			rp->p_tickets = 20;
+		}
+		else{
+		rp->p_tickets = rp->p_tickets + n;	/* Increase the number of tickets */
+		total_tickets = total_tickets + n;	/* Increase the total number of tickets */
+		}
+	}
+	/*	Decrease the number of tickets for the process	*/
+	else{
+		/*	Make sure that the tickets of one process would be bounded in 0 */
+		if ( (rp->p_tickets + n) < 0 || rp->p_tickets == 0 ){
+			rp->p_tickets = 0;
+		}
+		else{
+			rp->p_tickets = rp->p_tickets + n;	/* Decrease the number of tickets */
+			total_tickets = total_tickets + n;	/* Decrease the total number of tickets */
+		}
+	}
+}
+
 /*===========================================================================*
  *				enqueue					     * 
  *===========================================================================*/
@@ -1584,10 +1633,14 @@ void enqueue(
   read_tsc_64(&(get_cpulocal_var(proc_ptr)->p_accounting.enter_queue));
 
 
+  /*	Lottery Scheduling	*/
+  total_tickets = total_tickets + rp -> p_tickets;	/* When the process enters the scheduling queue, the total number of tickets increases. */
+
 #if DEBUG_SANITYCHECKS
   assert(runqueues_ok_local());
 #endif
 }
+
 
 /*===========================================================================*
  *				enqueue_head				     *
@@ -1635,6 +1688,8 @@ static void enqueue_head(struct proc *rp)
   /* Process accounting for scheduling */
   rp->p_accounting.dequeues--;
   rp->p_accounting.preempted++;
+
+
 
 #if DEBUG_SANITYCHECKS
   assert(runqueues_ok_local());
@@ -1702,6 +1757,8 @@ void dequeue(struct proc *rp)
 	rp->p_accounting.enter_queue = 0;
   }
 
+  /*	Lottery Scheduling	*/
+  total_tickets = total_tickets - rp -> p_tickets;	/* When the process leaves the scheduling queue, the total number of tickets decreases. */
 
 #if DEBUG_SANITYCHECKS
   assert(runqueues_ok_local());
@@ -1727,18 +1784,44 @@ static struct proc * pick_proc(void)
    * queues is defined in proc.h, and priorities are set in the task table.
    * If there are no processes ready to run, return NULL.
    */
-  rdy_head = get_cpulocal_var(run_q_head);
-  for (q=0; q < NR_SCHED_QUEUES; q++) {	
-	if(!(rp = rdy_head[q])) {
-		TRACE(VF_PICKPROC, printf("cpu %d queue %d empty\n", cpuid, q););
-		continue;
+
+  /*	Standard Scheduling Alogrithm	*/
+  if (	style == 0  ){
+	rdy_head = get_cpulocal_var(run_q_head);
+	for (q=0; q < NR_SCHED_QUEUES; q++) {	
+		if(!(rp = rdy_head[q])) {
+			TRACE(VF_PICKPROC, printf("cpu %d queue %d empty\n", cpuid, q););
+			continue;
+		}
+		assert(proc_is_runnable(rp));
+		if (priv(rp)->s_flags & BILLABLE)	 	
+			get_cpulocal_var(bill_ptr) = rp; /* bill for system time */
+		return rp;
 	}
-	assert(proc_is_runnable(rp));
-	if (priv(rp)->s_flags & BILLABLE)	 	
-		get_cpulocal_var(bill_ptr) = rp; /* bill for system time */
-	return rp;
+	return NULL;
   }
-  return NULL;
+
+  /*	Lottery Scheduling 	*/
+  else{
+	if (total_tickets <= 0) return NULL;	/* If there are no tickets i.e, there is no process to be scheduled, return NULL */
+	int chosen_ticket = 0;	/* The ticket number of the process to be selected */
+	chosen_ticket = rand() % total_tickets + 1;	/* Randomly select a ticket number between 1 and the total number of tickets */
+	rp = rdy_head[15];	/* The process to be selected is initialized to the process with the lowest priority */
+	int sum_tickets = 0;	/* The total number of tickets of the processes that have been passed */
+	for (q = 0; q < NR_SCHED_QUEUES; q++) {	/* Iterate through all the queues */
+		for (rp = rdy_head[q]; rp!=NULL; rp = rp->p_nextready) {	/* Iterate through all the processes in the queue */
+			sum_tickets = sum_tickets + rp -> p_tickets;	/* The total number of tickets of the processes that have been passed is updated */
+			if (sum_tickets >= chosen_ticket){	/* If the total number of tickets of the processes that have been passed is greater than or equal to the ticket number of the process to be selected, return the process */
+				assert(proc_is_runnable(rp));
+				if (priv(rp)->s_flags & BILLABLE){	/* If the process is billable, record it in 'bill_ptr' */	 	
+					get_cpulocal_var(bill_ptr) = rp; /* bill for system time */
+				}	
+				return rp;
+			}
+		}
+	}
+  }
+
 }
 
 /*===========================================================================*

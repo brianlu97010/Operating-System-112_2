@@ -33,6 +33,11 @@ struct proc {
 				   FIXME remove this */
   struct proc *p_scheduler;	/* who should get out of quantum msg */
   unsigned p_cpu;		/* what CPU is the process running on */
+
+  /*	Lottery Scheduling	*/
+  int p_tickets			/* The numbers of lottery tickets that the process holds */
+
+  
 #ifdef CONFIG_SMP
   bitchunk_t p_cpu_mask[BITMAP_CHUNKS(CONFIG_MAX_CPUS)]; /* what CPUs is the
 							    process allowed to
