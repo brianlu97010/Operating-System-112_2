@@ -135,6 +135,10 @@ void proc_init(void)
 		rp->p_priority = 0;		/* no priority */
 		rp->p_quantum_size_ms = 0;	/* no quantum size */
 
+		/*	Lottery Schdeuling	*/
+		/* initialize the number of tickets */
+        rp->p_tickets = 5;                /* each process starts with 5 tickets */
+
 		/* arch-specific initialization */
 		arch_proc_reset(rp);
 	}

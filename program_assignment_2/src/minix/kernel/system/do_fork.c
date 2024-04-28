@@ -61,6 +61,10 @@ int do_fork(struct proc * caller, message * m_ptr)
   old_fpu_save_area_p = rpc->p_seg.fpu_state;
 #endif
   *rpc = *rpp;				/* copy 'proc' struct */
+  
+  /* Lottery Scheduling */
+  rpc->p_tickets = rpp->p_tickets;  /* ensure tickets are copied correctly */
+
 #if defined(__i386__)
   rpc->p_seg.fpu_state = old_fpu_save_area_p;
   if(proc_used_fpu(rpp))
