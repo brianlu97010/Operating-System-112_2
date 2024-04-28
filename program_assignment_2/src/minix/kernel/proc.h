@@ -35,7 +35,7 @@ struct proc {
   unsigned p_cpu;		/* what CPU is the process running on */
 
   /*	Lottery Scheduling	*/
-  int p_tickets			/* The numbers of lottery tickets that the process holds */
+  int p_tickets;			/* The numbers of lottery tickets that the process holds */
 
   
 #ifdef CONFIG_SMP

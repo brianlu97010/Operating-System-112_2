@@ -35,6 +35,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "kernel/kernel.h"
 #include "vm.h"
@@ -1541,13 +1542,13 @@ int style = 1;
  *===========================================================================*/
 void ProcessSetPriority(
 	register struct proc *rp,
-	int n;		/* Number of tickets */
+	int n		/* Number of tickets */
 )
 {
 /* 
  * Tickets are allocated to the process according to its priority. 
  * The higher the priority, the more tickets are allocated.
- * The number of tickets is determined by the number of tickets of the process with the highest priority.
+ * This function changes the number of tickets that a process currently holds.
 */	
 	/*	Increase the number of tickets for the process	*/
 	if( n > 0 ){
@@ -1809,7 +1810,7 @@ static struct proc * pick_proc(void)
   else{
 	if (total_tickets <= 0) return NULL;	/* If there are no tickets i.e, there is no process to be scheduled, return NULL */
 	int chosen_ticket = 0;	/* The ticket number of the process to be selected */
-	chosen_ticket = rand() % total_tickets + 1;	/* Randomly select a ticket number between 1 and the total number of tickets */
+	chosen_ticket = random() % total_tickets + 1;	/* Randomly select a ticket number between 1 and the total number of tickets */
 	rp = rdy_head[15];	/* The process to be selected is initialized to the process with the lowest priority */
 	int sum_tickets = 0;	/* The total number of tickets of the processes that have been passed */
 	for (q = 0; q < NR_SCHED_QUEUES; q++) {	/* Iterate through all the queues */
@@ -1825,7 +1826,7 @@ static struct proc * pick_proc(void)
 		}
 	}
   }
-
+	return NULL;
 }
 
 /*===========================================================================*
