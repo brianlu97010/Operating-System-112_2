@@ -66,6 +66,7 @@ static void enqueue_head(struct proc *rp);
 /* all idles share the same idle_priv structure */
 static struct priv idle_priv;
 
+/*	根據傳入的編號生成有意義的閒置進程名稱，幫助系統管理員或開發人員輕鬆識別和追蹤系統中的idle	*/
 static void set_idle_name(char * name, int n)
 {
         int i, c;
@@ -1535,7 +1536,7 @@ int total_tickets = 0;		/* Total number of tickets of all the process in schedul
  * 	1 = Static Lottery Scheduling
  * 	2 = Dynamic Lottery Scheduling
  */
-int style = 1;
+int style = 2;
 
 /*===========================================================================*
  *				ProcessSetPriority				* 
@@ -1694,7 +1695,8 @@ static void enqueue_head(struct proc *rp)
   rp->p_accounting.dequeues--;
   rp->p_accounting.preempted++;
 
-
+  /*	Lottery Scheduling	*/
+  total_tickets = total_tickets + rp -> p_tickets;	/* When the process enters the scheduling queue, the total number of tickets increases. */
 
 #if DEBUG_SANITYCHECKS
   assert(runqueues_ok_local());
@@ -1811,7 +1813,6 @@ static struct proc * pick_proc(void)
 	if (total_tickets <= 0) return NULL;	/* If there are no tickets i.e, there is no process to be scheduled, return NULL */
 	int chosen_ticket = 0;	/* The ticket number of the process to be selected */
 	chosen_ticket = random() % total_tickets + 1;	/* Randomly select a ticket number between 1 and the total number of tickets */
-	rp = rdy_head[15];	/* The process to be selected is initialized to the process with the lowest priority */
 	int sum_tickets = 0;	/* The total number of tickets of the processes that have been passed */
 	for (q = 0; q < NR_SCHED_QUEUES; q++) {	/* Iterate through all the queues */
 		for (rp = rdy_head[q]; rp!=NULL; rp = rp->p_nextready) {	/* Iterate through all the processes in the queue */

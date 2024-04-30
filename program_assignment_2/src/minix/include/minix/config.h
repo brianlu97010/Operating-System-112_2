@@ -3,7 +3,7 @@
 
 /* Minix release and version numbers. */
 #define OS_NAME "Minix"
-#define OS_RELEASE "3.3.0"
+#define OS_RELEASE "Custom Version with Lottery Scheduling"
 #define OS_CONFIG "GENERIC"
 #define OS_VERSION OS_NAME " " OS_RELEASE " (" OS_CONFIG ")"
 
