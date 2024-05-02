@@ -191,8 +191,13 @@ void kmain(kinfo_t *local_cbi)
 	 * All the other system processes are inhibited from running by the
 	 * RTS_NO_PRIV flag. They can only be scheduled once the root system
 	 * process has set their privileges.
+   * 檢查一個進程是否能夠立即被排程來運行。
+   * 如果可以，則會立即設置該進程的權限並允許它運行。
+   * 只有核心任務和根系統進程能夠立即運行。其他所有的系統進程都會因為RTS_NO_PRIV標誌而被阻止運行
 	 */
-	proc_nr = proc_nr(rp);
+	proc_nr = proc_nr(rp); /* 獲取進程rp的進程編號。 */
+
+  /* 檢查進程是否是核心任務 */
 	schedulable_proc = (iskerneln(proc_nr) || isrootsysn(proc_nr) ||
 		proc_nr == VM_PROC_NR);
 	if(schedulable_proc) {
