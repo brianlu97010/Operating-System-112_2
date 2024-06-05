@@ -1,4 +1,6 @@
 # Operating-System-112_2
+The folloing Program assignments are all implemented and run in `Minix 3.3.0` and using `qemu-8.1.1` to emulate
+
 ## Program Assignment 1
 In this assignment you are to implement a Minix **shell** program.
 
